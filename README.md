@@ -25,7 +25,7 @@ The translation is first taken from Google and replaced by the AI version once t
 
 ## Choose the AI
 
-Pick the source in the popup. Settings appear below it; empty fields use the defaults.
+Pick the source in the popup. Settings appear below it; "by default" and empty fields use the built-in defaults. Each source has two model dropdowns, one for translation and one for the grammar passes: Opus, Sonnet or Haiku for Anthropic API and Claude; Luna, Terra, Sol or Astra for Codex and Wire.
 
 - Anthropic API: paste your API key. Defaults to Claude Sonnet for translation and Claude Haiku for the grammar passes.
 - Codex: install the Codex CLI and run `codex login`.

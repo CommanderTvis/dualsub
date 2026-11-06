@@ -223,9 +223,11 @@ elif [ "$LLM" = 'anthropic' ]; then
   cost=null
   ms=$(( ($(date +%s) - started) * 1000 ))
 elif [ "$LLM" = 'claude' ]; then
+  claude_model=$(cfg claudeModel "$model")
+  case $mode in fixup|syntax) claude_model=$(cfg claudeGrammarModel "$model") ;; esac
   envelope=$(printf %s "$prompt" \
     | limit "$CLAUDE" -p \
-        --model "$model" \
+        --model "$claude_model" \
         --system-prompt "$system" \
         --json-schema "$schema" \
         --output-format json \
