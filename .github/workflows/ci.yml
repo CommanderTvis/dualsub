@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A newer push supersedes a running one; the nightly release is replaced by the latest.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+      - run: node --test
+
+  # One prerelease that moves: the tag follows the commit, and the file keeps its name.
+  nightly:
+    needs: test
+    if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/master' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      # The unpacked extension (load it from brave://extensions) with the native host in host/.
+      - run: |
+          zip -r dualsub-nightly.zip manifest.json background.js content.js inject.js langs.js \
+            popup.html popup.js dualsub.css host/bridge.sh host/install.sh
+          unzip -l dualsub-nightly.zip
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          version=$(jq -r .version manifest.json)
+          gh release delete nightly --cleanup-tag --yes || true
+          gh release create nightly dualsub-nightly.zip --prerelease --target "$GITHUB_SHA" \
+            --title "Nightly $(date -u +%Y-%m-%d)" \
+            --notes "Extension ${version}, built from ${GITHUB_SHA} on $(date -u +%Y-%m-%d). Unzip, load the folder from brave://extensions (Load unpacked), then run host/install.sh and restart the browser."
