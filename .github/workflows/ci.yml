@@ -35,7 +35,7 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v7
-      # The unpacked extension (load it from brave://extensions) with the native host in host/.
+      # The unpacked extension (load it unpacked in any Chromium browser) with the native host in host/.
       - run: |
           zip -r dualsub-nightly.zip manifest.json background.js content.js inject.js langs.js \
             popup.html popup.js dualsub.css host/bridge.sh host/install.sh
@@ -48,4 +48,4 @@ jobs:
           gh release delete nightly --cleanup-tag --yes || true
           gh release create nightly dualsub-nightly.zip --prerelease --target "$GITHUB_SHA" \
             --title "Nightly $(date -u +%Y-%m-%d)" \
-            --notes "Extension ${version}, built from ${GITHUB_SHA} on $(date -u +%Y-%m-%d). Unzip, load the folder from brave://extensions (Load unpacked), then run host/install.sh and restart the browser."
+            --notes "Extension ${version}, built from ${GITHUB_SHA} on $(date -u +%Y-%m-%d). Unzip, load the folder as an unpacked extension in any Chromium-based browser (Brave, Chrome, Edge, Vivaldi, Arc), then run host/install.sh and restart the browser."
