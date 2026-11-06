@@ -1,17 +1,34 @@
 #!/bin/sh
-# Registers the native messaging host with every Chromium browser installed on this Mac
-# (Brave, Chrome, Chromium, Edge, Vivaldi, Arc). Run once, after loading the extension
-# via chrome://extensions (or the browser's equivalent) -> Load unpacked.
+# Registers the native messaging host with every Chromium browser installed on this Mac or
+# Linux machine (Brave, Chrome, Chromium, Edge, Vivaldi, Arc). Run once, after loading the
+# extension via chrome://extensions (or the browser's equivalent) -> Load unpacked.
 set -e
 
 HOST_NAME=de.deutsch.prime_dualsub
 EXTENSION_ID=ehhcbkjmmppglbijpafhmimehhiibnag
 HERE=$(cd "$(dirname "$0")" && pwd)
-SUPPORT="$HOME/Library/Application Support"
+if [ "$(uname)" = Darwin ]; then
+  SUPPORT="$HOME/Library/Application Support"
+  BROWSERS='BraveSoftware/Brave-Browser
+Google/Chrome
+Chromium
+Microsoft Edge
+Vivaldi
+Arc/User Data'
+else
+  SUPPORT="${XDG_CONFIG_HOME:-$HOME/.config}"
+  BROWSERS='BraveSoftware/Brave-Browser
+google-chrome
+chromium
+microsoft-edge
+vivaldi'
+fi
 
 chmod +x "$HERE/bridge.sh"
 found=0
-for dir in BraveSoftware/Brave-Browser Google/Chrome Chromium Microsoft\ Edge Vivaldi Arc/User\ Data; do
+IFS='
+'
+for dir in $BROWSERS; do
   [ -d "$SUPPORT/$dir" ] || continue
   TARGET="$SUPPORT/$dir/NativeMessagingHosts"
   mkdir -p "$TARGET"

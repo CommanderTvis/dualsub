@@ -28,13 +28,22 @@
   // YouTube lists its subtitle tracks in the player response and serves them from its own
   // origin, so the page fetches the track itself — no interception, no CORS.
   let lastVideo = null
+  // Language being learnt, sent by the content script; no track is picked before it arrives.
+  let learn = null
+  addEventListener('message', event => {
+    if (event.source !== window || event.data?.source !== 'dualsub-content') return
+    if (!event.data.learn || event.data.learn === learn) return
+    learn = event.data.learn
+    lastVideo = null
+    findYoutubeTrack()
+  })
 
   const say = text => window.postMessage({ source: 'dualsub-inject', diag: `YT: ${text}` }, '*')
 
   async function findYoutubeTrack() {
     if (!location.hostname.endsWith('youtube.com')) return
     const video = new URLSearchParams(location.search).get('v')
-    if (!video || video === lastVideo) return
+    if (!video || video === lastVideo || !learn) return
 
     const response = window.ytInitialPlayerResponse
     const tracks = response?.captions?.playerCaptionsTracklistRenderer?.captionTracks
@@ -49,12 +58,12 @@
     reported = false
     say(`tracks ${tracks.map(t => `${t.languageCode}/${t.kind || 'manual'}`).join(' ')}`)
 
-    const german = tracks.filter(track => (track.languageCode || '').startsWith('de'))
+    const matching = tracks.filter(track => (track.languageCode || '').split('-')[0] === learn)
     // A real subtitle track always beats speech recognition.
-    const picked = german.find(track => track.kind !== 'asr') || german.find(track => track.kind === 'asr')
+    const picked = matching.find(track => track.kind !== 'asr') || matching.find(track => track.kind === 'asr')
     if (!picked) {
       lastVideo = video
-      window.postMessage({ source: 'dualsub-inject', noTrack: 'kein deutscher Untertitel' }, '*')
+      window.postMessage({ source: 'dualsub-inject', noTrack: `no ${learn} subtitles` }, '*')
       return
     }
 

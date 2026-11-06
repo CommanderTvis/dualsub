@@ -62,10 +62,16 @@ chrome.storage.sync.get(['syntax', 'hard']).then(data => {
   setHard(data.hard)
 }, () => {})
 
+// The page-world script picks the YouTube track by language, and only this side can read
+// the setting.
+const tellLearnt = code => window.postMessage({ source: 'dualsub-content', learn: code || 'de' }, '*')
+chrome.storage.sync.get('source').then(data => tellLearnt(data.source), () => tellLearnt())
+
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== 'sync') return
   if (changes.syntax) withSyntax = changes.syntax.newValue
   if (changes.hard) setHard(changes.hard.newValue)
+  if (changes.source) tellLearnt(changes.source.newValue)
 })
 
 // Roles come back for the whole cue, but the player may have split that cue across nodes at
@@ -219,12 +225,12 @@ function showStatus(status) {
   const host = statusHost()
   const existing = document.querySelector('.dualsub-status')
   const text = {
-    running: `Перевод дорожки: ${status?.detail} реплик…`,
-    fixing: `Чистка автосубтитров: осталось ${status?.detail}…`,
-    parsing: `Разбор грамматики: осталось ${status?.detail}…`,
-    foreign: `Дорожка не на немецком (${status?.detail}), перевод выключен`,
-    failed: `ИИ недоступен (${status?.detail || 'причина неизвестна'}), строка идёт из Google`,
-    done: 'Дорожка переведена'
+    running: `Translating the track: ${status?.detail} lines…`,
+    fixing: `Cleaning up auto-generated subtitles: ${status?.detail} left…`,
+    parsing: `Grammar analysis: ${status?.detail} left…`,
+    foreign: `Track is not in the language you are learning (${status?.detail}), translation off`,
+    failed: `AI unavailable (${status?.detail || 'unknown reason'}), lines come from Google`,
+    done: 'Track translated'
   }[status?.state]
   if (!text) {
     if (existing) existing.remove()

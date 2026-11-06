@@ -66,6 +66,7 @@ test('Codex is the default and maps translations by line number', () => {
   assert.equal(response.cost, null)
   assert.equal(typeof response.ms, 'number')
   assert.match(invocation.prompt, /1\. Hallo!\n2\. Welt/)
+  assert.match(invocation.prompt, /German series into Russian/)
   assert.equal(invocation.args.includes('--model'), false, 'do not pass Claude model aliases')
 })
 
@@ -78,14 +79,14 @@ test('the host rejects more than 900 cues before starting the model', () => {
 test('syntax returns grammar spans with the grammar schema and model', () => {
   const { response, invocation } = run({ mode: 'syntax', config: { codexGrammarModel: 'grammar-model' } })
   assert.deepEqual(response.pairs, { 1: [{ t: 'Hallo!', r: 'x' }] })
-  assert.match(invocation.prompt, /syntaktisch/)
+  assert.match(invocation.prompt, /parse German subtitle lines syntactically/)
   assert.equal(invocation.args[invocation.args.indexOf('--model') + 1], 'grammar-model')
 })
 
 test('fixup uses the cleanup prompt and falls back to the Codex model setting', () => {
   const { response, invocation } = run({ mode: 'fixup', config: { codexModel: 'base-model' } })
   assert.equal(response.ok, true)
-  assert.match(invocation.prompt, /Hoerfehler/)
+  assert.match(invocation.prompt, /mishearings/)
   assert.equal(invocation.args[invocation.args.indexOf('--model') + 1], 'base-model')
 })
 

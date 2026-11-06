@@ -1,18 +1,19 @@
 const select = document.getElementById('lang')
+const source = document.getElementById('source')
 const status = document.getElementById('status')
 
 DUALSUB_LANGS.forEach(lang => {
-  const option = document.createElement('option')
-  option.value = lang.code
-  option.textContent = lang.label
-  select.appendChild(option)
+  const text = lang.label === lang.name ? lang.name : `${lang.name} · ${lang.label}`
+  select.add(new Option(text, lang.code))
+  source.add(new Option(text, lang.code))
 })
 
 const syntax = document.getElementById('syntax')
 const aiSource = document.getElementById('ai-source')
 const hard = document.getElementById('hard')
 
-chrome.storage.sync.get(['target', 'syntax', 'aiSource', 'hard']).then(data => {
+chrome.storage.sync.get(['target', 'source', 'syntax', 'aiSource', 'hard']).then(data => {
+  source.value = data.source || DUALSUB_DEFAULT_SOURCE
   hard.checked = data.hard === true
   select.value = data.target || DUALSUB_DEFAULT_LANG
   syntax.checked = data.syntax !== false
@@ -32,6 +33,10 @@ select.addEventListener('change', async () => {
   await chrome.storage.sync.set({ target: select.value })
 })
 
+source.addEventListener('change', async () => {
+  await chrome.storage.sync.set({ source: source.value })
+})
+
 aiSource.addEventListener('change', async () => {
   await chrome.storage.sync.set({ aiSource: aiSource.value })
   showConfig()
@@ -45,21 +50,21 @@ const CLI_MODELS = [['opus', 'Opus'], ['sonnet', 'Sonnet'], ['haiku', 'Haiku']]
 // [key, label, placeholder, type, choices]: choices turn the field into a dropdown, the empty
 // option meaning the default.
 const CONFIG = {
-  codex: [['codexPath', 'Путь к codex', 'codex'],
-    ['codexModel', 'Модель', '', 'select', GPT],
-    ['codexGrammarModel', 'Модель для грамматики', '', 'select', GPT]],
-  claude: [['claudePath', 'Путь к claude', '~/.local/bin/claude'],
-    ['claudeModel', 'Модель', '', 'select', CLI_MODELS],
-    ['claudeGrammarModel', 'Модель для грамматики', '', 'select', CLI_MODELS]],
-  anthropic: [['anthropicKey', 'API-ключ', 'sk-ant-…', 'password'],
-    ['anthropicModel', 'Модель', '', 'select', CLAUDE_MODELS],
-    ['anthropicGrammarModel', 'Модель для грамматики', '', 'select', CLAUDE_MODELS],
-    ['anthropicUrl', 'Адрес API', 'https://api.anthropic.com']],
-  wire: [['wireGateway', 'Адрес шлюза', 'http://127.0.0.1:…/responses base'],
-    ['wireModel', 'Модель', '', 'select', GPT],
-    ['wireGrammarModel', 'Модель для грамматики', '', 'select', GPT]]
+  codex: [['codexPath', 'Path to codex', 'codex'],
+    ['codexModel', 'Model', '', 'select', GPT],
+    ['codexGrammarModel', 'Grammar model', '', 'select', GPT]],
+  claude: [['claudePath', 'Path to claude', '~/.local/bin/claude'],
+    ['claudeModel', 'Model', '', 'select', CLI_MODELS],
+    ['claudeGrammarModel', 'Grammar model', '', 'select', CLI_MODELS]],
+  anthropic: [['anthropicKey', 'API key', 'sk-ant-…', 'password'],
+    ['anthropicModel', 'Model', '', 'select', CLAUDE_MODELS],
+    ['anthropicGrammarModel', 'Grammar model', '', 'select', CLAUDE_MODELS],
+    ['anthropicUrl', 'API URL', 'https://api.anthropic.com']],
+  wire: [['wireGateway', 'Gateway URL', 'http://127.0.0.1:…/responses base'],
+    ['wireModel', 'Model', '', 'select', GPT],
+    ['wireGrammarModel', 'Grammar model', '', 'select', GPT]]
 }
-const COMMON = [['timeout', 'Таймаут запроса, с', '600', 'number']]
+const COMMON = [['timeout', 'Request timeout, s', '600', 'number']]
 const box = document.getElementById('ai-config')
 let saved = {}
 
@@ -73,7 +78,7 @@ function showConfig() {
     let input
     if (choices) {
       input = document.createElement('select')
-      const options = [['', 'по умолчанию'], ...choices]
+      const options = [['', 'default'], ...choices]
       // A model typed into an older version stays selectable.
       if (saved[key] && !choices.some(([value]) => value === saved[key])) options.push([saved[key], saved[key]])
       options.forEach(([value, text]) => input.add(new Option(text, value)))
@@ -103,13 +108,13 @@ chrome.storage.local.get('aiConfig').then(data => {
 
 function paint(state) {
   status.textContent = {
-    running: `Перевод дорожки: ${state.detail} реплик, минута-две.`,
-    parsing: `Разбор грамматики: осталось ${state.detail} реплик.`,
-    fixing: `Чистка автосубтитров: осталось ${state.detail} реплик.`,
-    done: 'Дорожка переведена целиком.',
-    foreign: `Дорожка на языке «${state.detail}», не немецкий — ИИ и Google не вызываются.`,
-    failed: `ИИ недоступен, строка идёт из Google. ${state.detail}`,
-    idle: 'Дорожка ещё не перехвачена — включи воспроизведение.'
+    running: `Translating the track: ${state.detail} lines, a minute or two.`,
+    parsing: `Grammar analysis: ${state.detail} lines left.`,
+    fixing: `Cleaning up auto-generated subtitles: ${state.detail} lines left.`,
+    done: 'The whole track is translated.',
+    foreign: `The track is in "${state.detail}", not the language you are learning: no AI or Google calls.`,
+    failed: `AI unavailable, lines come from Google. ${state.detail}`,
+    idle: 'No subtitle track caught yet: start playback.'
   }[state.state] || ''
 }
 

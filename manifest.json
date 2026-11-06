@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Dualsub",
-  "version": "1.5.0",
-  "description": "Вторая строка субтитров и синтаксический разбор на Prime Video, ARD Mediathek, ZDF, YouTube и Netflix.",
+  "version": "1.6.0",
+  "description": "A second subtitle line in your native language, plus grammar analysis, on Prime Video, ARD Mediathek, ZDF, YouTube and Netflix.",
   "permissions": [
     "storage",
     "nativeMessaging"

@@ -38,7 +38,8 @@ test('tracks above the host limit keep every translation at its original line nu
     queueMicrotask,
     importScripts() {
       context.DUALSUB_DEFAULT_LANG = 'ru'
-      context.DUALSUB_LANGS = [{ code: 'ru', de: 'Russische' }]
+      context.DUALSUB_DEFAULT_SOURCE = 'de'
+      context.DUALSUB_LANGS = [{ code: 'ru', name: 'Russian' }]
     }
   }
   const translate = runInNewContext(`${source}\naskSplit`, context)

@@ -24,6 +24,12 @@ jobs:
         with:
           node-version: 24
       - run: node --test
+      - name: install.sh registers the host on Linux
+        run: |
+          export HOME="$(mktemp -d)"
+          mkdir -p "$HOME/.config/google-chrome"
+          sh host/install.sh
+          jq -e '.path | endswith("/host/bridge.sh")' "$HOME/.config/google-chrome/NativeMessagingHosts/de.deutsch.prime_dualsub.json"
 
   # One prerelease that moves: the tag follows the commit, and the file keeps its name.
   nightly:

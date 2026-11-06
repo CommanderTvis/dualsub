@@ -22,28 +22,31 @@
   .field { display: block; margin-top: 8px; font-size: 12px; }
   code { color: #9cfde4; }
 </style>
-<h1>Вторая строка субтитров</h1>
+<h1>Dualsub</h1>
+<label for="source">I am learning</label>
+<select id="source"></select>
+<label for="lang">Second line in</label>
 <select id="lang"></select>
-<p>Показывается, пока зажат правый <code>Shift</code>.</p>
+<p>The second line shows while the right <code>Shift</code> is held.</p>
 
-<label for="ai-source">Источник ИИ</label>
+<label for="ai-source">AI source</label>
 <select id="ai-source">
   <option value="codex">Codex</option>
-  <option value="claude">Claude</option>
+  <option value="claude">Claude Code</option>
   <option value="anthropic">Anthropic API</option>
   <option value="wire">Wire</option>
 </select>
 
 <div id="ai-config"></div>
 
-<label class="row"><input type="checkbox" id="hard"> Сложный режим: без субтитров, пока не зажат <code>Shift</code></label>
-<label class="row"><input type="checkbox" id="syntax"> Разбор немецкой строки</label>
+<label class="row"><input type="checkbox" id="hard"> Hard mode: no subtitles until <code>Shift</code> is held</label>
+<label class="row"><input type="checkbox" id="syntax"> Grammar analysis of the subtitle line</label>
 <ul class="legend">
-  <li><span class="dualsub-s">подлежащее</span></li>
-  <li><span class="dualsub-v">сказуемое, финитный глагол</span></li>
-  <li><span class="dualsub-k">глагол: конец рамки</span></li>
-  <li><span class="dualsub-o">дополнение</span></li>
-  <li><span class="dualsub-a">обстоятельство</span></li>
+  <li><span class="dualsub-s">subject</span></li>
+  <li><span class="dualsub-v">finite verb</span></li>
+  <li><span class="dualsub-k">rest of the verb: infinitive, participle, particle</span></li>
+  <li><span class="dualsub-o">object</span></li>
+  <li><span class="dualsub-a">adverbial</span></li>
 </ul>
 <p id="status"></p>
 <script src="langs.js"></script>

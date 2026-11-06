@@ -4,10 +4,11 @@ importScripts('langs.js')
 // so the page context needs access to it.
 chrome.storage.session.setAccessLevel({ accessLevel: 'TRUSTED_AND_UNTRUSTED_CONTEXTS' })
 
-const SOURCE_LANG = 'de'
 const HOST = 'de.deutsch.prime_dualsub'
 
 let target = DUALSUB_DEFAULT_LANG
+// The language being learnt: the subtitle track is expected in it.
+let source = DUALSUB_DEFAULT_SOURCE
 let withSyntax = true
 let aiSource = 'codex'
 // Backend settings from the popup (paths, models, API key); the host applies its defaults.
@@ -18,9 +19,11 @@ let lastTrack = null
 let foreign = null
 
 const language = () => DUALSUB_LANGS.find(item => item.code === target) || DUALSUB_LANGS[0]
+const learnt = () => DUALSUB_LANGS.find(item => item.code === source) || { code: source, name: source }
 
-chrome.storage.sync.get(['target', 'syntax', 'aiSource']).then(data => {
+chrome.storage.sync.get(['target', 'source', 'syntax', 'aiSource']).then(data => {
   if (data.target) target = data.target
+  if (data.source) source = data.source
   if (typeof data.syntax === 'boolean') withSyntax = data.syntax
   if (data.aiSource) aiSource = data.aiSource
 })
@@ -46,12 +49,13 @@ chrome.storage.onChanged.addListener((changes, area) => {
     console.log('[dualsub] AI source switched to', aiSource)
     if (lastTrack) ingestTrack(lastTrack)
   }
-  if (!changes.target) return
-  target = changes.target.newValue
+  if (!changes.target && !changes.source) return
+  if (changes.target) target = changes.target.newValue
+  if (changes.source) source = changes.source.newValue || DUALSUB_DEFAULT_SOURCE
   cache.clear()
   persist()
   setStatus('idle')
-  console.log('[dualsub] language switched to', target)
+  console.log('[dualsub] languages switched to', source, '->', target)
   if (lastTrack) ingestTrack(lastTrack)
 })
 
@@ -114,7 +118,7 @@ function setStatus(state, detail) {
 
 async function googleTranslate(text) {
   const url = 'https://translate.googleapis.com/translate_a/single'
-    + `?client=gtx&sl=${SOURCE_LANG}&tl=${target}&dt=t&q=${encodeURIComponent(text)}`
+    + `?client=gtx&sl=${source}&tl=${target}&dt=t&q=${encodeURIComponent(text)}`
   const res = await fetch(url)
   if (!res.ok) throw new Error(`google ${res.status}`)
   const body = await res.json()
@@ -156,7 +160,7 @@ function reportMiss(text) {
 }
 
 async function lookup(text) {
-  if (foreign) throw new Error(`track is ${foreign}, not German`)
+  if (foreign) throw new Error(`track is ${foreign}, not ${learnt().name}`)
   await restore()
   const key = normalize(text)
   if (cache.has(key)) return cache.get(key)
@@ -277,7 +281,7 @@ function callAI(cues, mode, model) {
     port.onDisconnect.addListener(() => {
       reject(new Error(chrome.runtime.lastError?.message || 'bridge: port closed'))
     })
-    port.postMessage({ cues, mode, model, aiSource, config: aiConfig, source: SOURCE_LANG, target, targetName: language().de })
+    port.postMessage({ cues, mode, model, aiSource, config: aiConfig, source, sourceName: learnt().name, target, targetName: language().name })
   })
 }
 
@@ -299,7 +303,7 @@ async function loadArdTrack(id) {
       .match(/https:\/\/api\.ardmediathek\.de\/player-service\/subtitle\/webvtt\/[^"'\s\\]+/)
     if (!found) {
       note(`ARD: gateway ${res.status}, ${meta.length} bytes, no subtitle url`)
-      await setStatus('failed', 'у этой серии нет дорожки субтитров')
+      await setStatus('failed', 'this episode has no subtitle track')
       return
     }
     const track = await (await fetch(found[0])).text()
@@ -317,7 +321,7 @@ async function ingestTrack(track, asr) {
   // Whole-track sample: a single cue is too short to detect reliably, a few hundred are not.
   const { languages } = await chrome.i18n.detectLanguage(cues.slice(0, 200).join(' '))
   const lang = languages[0]?.language
-  foreign = lang && lang !== SOURCE_LANG ? lang : null
+  foreign = lang && lang.split('-')[0] !== source ? lang : null
   note(`track received: ${track.length}b, ${cues.length} cues, asr=${!!asr}, lang=${lang}`)
   if (foreign) {
     await setStatus('foreign', foreign)
@@ -458,7 +462,7 @@ async function runSyntax() {
         console.log(`[dualsub] syntax: +${filled}, ${pending.length} cues left`)
       } catch (err) {
         note(`syntax batch failed: ${String(err)}`)
-        await setStatus('failed', `разбор: ${String(err)}`)
+        await setStatus('failed', `grammar: ${String(err)}`)
         break
       }
     }
