@@ -1,0 +1,50 @@
+.dualsub-line {
+  position: fixed;
+  z-index: 2147483646;
+  text-align: center;
+  color: #9cfde4;
+  font-family: inherit;
+  line-height: 1.25;
+  text-shadow: 0 0 4px #000, 0 0 4px #000;
+  pointer-events: none;
+}
+
+.dualsub-line.dualsub-hidden {
+  visibility: hidden;
+}
+
+
+
+.dualsub-status {
+  position: fixed;
+  z-index: 2147483647;
+  padding: 7px 12px;
+  border-radius: 6px;
+  background: rgba(29, 27, 46, .92);
+  color: #9cfde4;
+  font: 13px -apple-system, sans-serif;
+  pointer-events: none;
+}
+
+.dualsub-line.dualsub-google {
+  color: #ffd479;
+}
+
+.dualsub-mark {
+  font-size: .62em;
+  vertical-align: super;
+  opacity: .55;
+  margin-right: .7em;
+  font-weight: 600;
+}
+
+.dualsub-role {
+  text-underline-offset: .18em;
+  text-decoration-skip-ink: none;
+}
+
+.dualsub-s { text-decoration: underline solid; text-decoration-thickness: 2px; }
+.dualsub-v { text-decoration: underline double; }
+.dualsub-k { text-decoration: underline wavy; }
+.dualsub-o { text-decoration: underline dotted; text-decoration-thickness: 2px; }
+.dualsub-a { text-decoration: underline dashed; }

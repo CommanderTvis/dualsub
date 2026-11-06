@@ -1,0 +1,60 @@
+{
+  "manifest_version": 3,
+  "name": "Dualsub",
+  "version": "1.5.0",
+  "description": "Вторая строка субтитров и синтаксический разбор на Prime Video, ARD Mediathek, ZDF, YouTube и Netflix.",
+  "permissions": [
+    "storage",
+    "nativeMessaging"
+  ],
+  "host_permissions": [
+    "https://translate.googleapis.com/*",
+    "https://api.ardmediathek.de/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.primevideo.com/*",
+        "*://*.amazon.de/*",
+        "*://*.amazon.com/*",
+        "*://*.ardmediathek.de/*",
+        "*://*.zdf.de/*",
+        "*://*.youtube.com/*",
+        "*://*.netflix.com/*"
+      ],
+      "js": [
+        "inject.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true,
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "*://*.primevideo.com/*",
+        "*://*.amazon.de/*",
+        "*://*.amazon.com/*",
+        "*://*.ardmediathek.de/*",
+        "*://*.zdf.de/*",
+        "*://*.youtube.com/*",
+        "*://*.netflix.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "dualsub.css"
+      ],
+      "run_at": "document_start",
+      "all_frames": true
+    }
+  ],
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAz929Y5fWufPUVoaaGEGuTSmvRHLzAL+gwcFbcsBd9zjdEyPS3/IrOeaq1YEmiKCZbAosvNPItIdc+5NGcKtu/MslxpyvVJJttTdnH97f6Vr1mI54/W+H9DOVKkOONeft6ExTLB/GUpK5GqIsVwcaI2UWoIh74uc55BH1NkLzVJ3/EAHEMzI1ipP53pvioEU8y65QQTuU7M8//wZYrfI0rkqe7evWJdDJF/zHJZcyo3qvZhAhSopIGi8hf6EtmuYJUK23n5jyt4RQAtBuFX1vYx1CuizYuN1mowBb179vC1cL6iHaUESCP/HI8DeUglDPYbPP8cl+I3Xoje8Qbn/KXwIDAQAB",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Dualsub"
+  }
+}
