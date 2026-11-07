@@ -24,10 +24,10 @@ async function serve(reply) {
 
 const request = { cues: ['Hallo!', 'Welt'], mode: 'translate', sourceName: 'German', targetName: 'Russian' }
 
-test('Anthropic API: forced tool call, key in header, results mapped by line number', async () => {
-  const api = await serve(() => ({ body: { stop_reason: 'tool_use', content: [
-    { type: 'text', text: 'ignored' },
-    { type: 'tool_use', name: 'lines', input: { lines: [{ i: 2, t: 'Мир' }, { i: 1, t: 'Привет!' }] } }] } }))
+test('Anthropic API: structured output, key in header, results mapped by line number', async () => {
+  const api = await serve(() => ({ body: { stop_reason: 'end_turn', content: [
+    { type: 'thinking', thinking: '' },
+    { type: 'text', text: JSON.stringify({ lines: [{ i: 2, t: 'Мир' }, { i: 1, t: 'Привет!' }] }) }] } }))
   try {
     const pairs = await aiAskHttp('anthropic', request, { anthropicKey: 'sk-test', anthropicUrl: `${api.url}/` })
     assert.deepEqual(pairs, { 1: 'Привет!', 2: 'Мир' })
@@ -37,7 +37,9 @@ test('Anthropic API: forced tool call, key in header, results mapped by line num
     assert.equal(headers['anthropic-version'], '2023-06-01')
     assert.equal(headers['anthropic-dangerous-direct-browser-access'], 'true')
     assert.equal(body.model, 'claude-sonnet-5-5')
-    assert.deepEqual(body.tool_choice, { type: 'tool', name: 'lines' })
+    assert.equal(body.tool_choice, undefined, 'current models reject forced tool use')
+    assert.equal(body.output_config.format.type, 'json_schema')
+    assert.equal(body.output_config.format.schema.additionalProperties, false)
     assert.match(body.system, /German series into Russian/)
     assert.match(body.messages[0].content, /1\. Hallo!\n2\. Welt/)
   } finally {
@@ -46,11 +48,11 @@ test('Anthropic API: forced tool call, key in header, results mapped by line num
 })
 
 test('Anthropic API: grammar passes use the grammar model', async () => {
-  const api = await serve(() => ({ body: { content: [{ type: 'tool_use', input: { lines: [{ i: 1, p: [{ t: 'Hallo!', r: 'x' }] }] } }] } }))
+  const api = await serve(() => ({ body: { content: [{ type: 'text', text: JSON.stringify({ lines: [{ i: 1, p: [{ t: 'Hallo!', r: 'x' }] }] }) }] } }))
   try {
     await aiAskHttp('anthropic', { ...request, mode: 'syntax' }, { anthropicKey: 'k', anthropicUrl: api.url, anthropicGrammarModel: 'claude-opus-5-5' })
     assert.equal(api.seen[0].body.model, 'claude-opus-5-5')
-    assert.ok(api.seen[0].body.tools[0].input_schema.properties.lines.items.properties.p)
+    assert.ok(api.seen[0].body.output_config.format.schema.properties.lines.items.properties.p)
   } finally {
     api.close()
   }

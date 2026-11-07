@@ -174,7 +174,8 @@ async function aiPostJson(label, url, body, headers, timeoutSeconds) {
   }
 }
 
-// Structured output through a forced tool call: the tool input is the schema-shaped JSON.
+// Structured outputs: the answer is a text block holding schema-valid JSON. (Forced tool
+// calls are rejected by the current Sonnet and Opus.)
 async function aiAskAnthropic(task, config) {
   const key = aiSetting(config, 'anthropicKey', '')
   if (!key) throw new Error('anthropic: set the API key in the extension popup')
@@ -185,8 +186,7 @@ async function aiAskAnthropic(task, config) {
     max_tokens: 32000,
     system: task.system,
     messages: [{ role: 'user', content: task.prompt }],
-    tools: [{ name: 'lines', description: 'Return the result line by line', input_schema: task.schema }],
-    tool_choice: { type: 'tool', name: 'lines' }
+    output_config: { format: { type: 'json_schema', schema: task.schema } }
   }, {
     'x-api-key': key,
     'anthropic-version': '2023-06-01',
@@ -195,9 +195,10 @@ async function aiAskAnthropic(task, config) {
   }, Number(aiSetting(config, 'timeout')))
   if (response.stop_reason === 'refusal') throw new Error('anthropic: refused')
   if (response.stop_reason === 'max_tokens') throw new Error('anthropic: answer cut off at max_tokens')
-  const call = (response.content || []).find(block => block.type === 'tool_use')
-  if (!call) throw new Error('anthropic response contained no tool result')
-  return aiMapLines(call.input, task, 'anthropic')
+  // Thinking blocks may come first; only the text carries the JSON.
+  const text = (response.content || []).filter(block => block.type === 'text').map(block => block.text).join('')
+  if (!text) throw new Error('anthropic response contained no output text')
+  return aiMapLines(text, task, 'anthropic')
 }
 
 // A local Responses API proxy. Structured output is native there.
