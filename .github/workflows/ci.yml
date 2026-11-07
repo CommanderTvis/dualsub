@@ -15,26 +15,46 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v6
         with:
           node-version: 24
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
       - run: node --test
-      - name: install.sh registers the host on Linux
+      # Bun cross-compiles every target from here, and signs the macOS ones ad hoc.
+      - name: Compile the native host
         run: |
-          export HOME="$(mktemp -d)"
-          export XDG_CONFIG_HOME="$HOME/.config"
-          mkdir -p "$HOME/.config/google-chrome"
-          sh host/install.sh
-          jq -e '.path | endswith("/host/bridge.sh")' "$HOME/.config/google-chrome/NativeMessagingHosts/de.deutsch.prime_dualsub.json"
+          for target in darwin-arm64 darwin-x64 linux-x64 linux-arm64; do
+            bun build --compile --minify --target="bun-$target" host/host.js --outfile "out/$target/host/dualsub-host"
+          done
+      - name: Test the compiled host, install included
+        run: DUALSUB_HOST="$PWD/out/linux-x64/host/dualsub-host" node --test host/
+      # Each zip is the unpacked extension plus that platform's host binary in host/.
+      - name: Package
+        run: |
+          mkdir dist
+          for pair in darwin-arm64:macos-arm64 darwin-x64:macos-x64 linux-x64:linux-x64 linux-arm64:linux-arm64; do
+            target=${pair%%:*} name=${pair#*:}
+            cp manifest.json background.js content.js inject.js langs.js ai.js popup.html popup.js dualsub.css "out/$target/"
+            (cd "out/$target" && zip -qr "../../dist/dualsub-nightly-$name.zip" .)
+          done
+          ls -la dist
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dualsub
+          path: dist/*.zip
+          if-no-files-found: error
+          compression-level: 0
 
-  # One prerelease that moves: the tag follows the commit, and the file keeps its name.
+  # One prerelease that moves: the tag follows the commit, and the files keep their names.
   nightly:
-    needs: test
+    needs: build
     if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/master' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -42,17 +62,16 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v7
-      # The unpacked extension (load it unpacked in any Chromium browser) with the native host in host/.
-      - run: |
-          zip -r dualsub-nightly.zip manifest.json background.js content.js inject.js langs.js \
-            popup.html popup.js dualsub.css host/bridge.sh host/install.sh
-          unzip -l dualsub-nightly.zip
+      - uses: actions/download-artifact@v8
+        with:
+          name: dualsub
+          path: dist
       - env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
           version=$(jq -r .version manifest.json)
           gh release delete nightly --cleanup-tag --yes || true
-          gh release create nightly dualsub-nightly.zip --prerelease --target "$GITHUB_SHA" \
+          gh release create nightly dist/*.zip --prerelease --target "$GITHUB_SHA" \
             --title "Nightly $(date -u +%Y-%m-%d)" \
-            --notes "Extension ${version}, built from ${GITHUB_SHA} on $(date -u +%Y-%m-%d). Unzip, load the folder as an unpacked extension in any Chromium-based browser (Brave, Chrome, Edge, Vivaldi, Arc), then run host/install.sh and restart the browser."
+            --notes "Extension ${version}, built from ${GITHUB_SHA} on $(date -u +%Y-%m-%d). Pick the zip for your system, unzip it and load the folder as an unpacked extension in any Chromium-based browser. For Codex or Claude Code, also run host/dualsub-host install once and restart the browser. See the README."

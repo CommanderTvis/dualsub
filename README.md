@@ -4,11 +4,18 @@ A second subtitle line in your native language for videos in the language you ar
 
 ## Install
 
-1. Download `dualsub-nightly.zip` from the [nightly release](https://github.com/CommanderTvis/dualsub/releases/tag/nightly) and unzip it.
+1. From the [nightly release](https://github.com/CommanderTvis/dualsub/releases/tag/nightly), download the zip for your system: `macos-arm64` (Apple silicon), `macos-x64` (Intel Mac), `linux-x64` or `linux-arm64`. Unzip it.
 2. Open the extensions page of your browser (Brave, Chrome, Chromium, Edge, Vivaldi, Arc), enable developer mode and choose "Load unpacked". Select the unzipped folder.
-3. In a terminal, run `host/install.sh` from that folder, then restart the browser.
 
-The AI translation needs `jq`, `curl` and `perl` (install `jq` with `brew install jq` or your distribution's package manager), plus whichever AI you pick below.
+That is enough for the Anthropic API and Wire. Codex and Claude Code also need the bundled native host, registered once:
+
+```sh
+cd path/to/unzipped/folder
+xattr -dr com.apple.quarantine .   # macOS only: lets the downloaded binary run
+host/dualsub-host install
+```
+
+Then restart the browser.
 
 ## Use
 
@@ -36,4 +43,4 @@ Settings, including the API key, stay in your browser on this machine.
 
 ## Update
 
-Download the newest `dualsub-nightly.zip`, replace the folder contents, run `host/install.sh` again, and reload the extension.
+Download the newest zip for your system, replace the folder contents (on macOS, run the `xattr` line again), and reload the extension. Run `host/dualsub-host install` again only if you moved the folder.

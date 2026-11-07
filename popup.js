@@ -71,6 +71,11 @@ let saved = {}
 function showConfig() {
   box.replaceChildren()
   const fields = [...(CONFIG[aiSource.value] || []), ...COMMON]
+  if (aiSource.value === 'codex' || aiSource.value === 'claude') {
+    const hint = document.createElement('p')
+    hint.textContent = 'Needs the native host: run host/dualsub-host install once.'
+    box.appendChild(hint)
+  }
   fields.forEach(([key, label, placeholder, type, choices]) => {
     const wrap = document.createElement('label')
     wrap.className = 'field'
@@ -92,6 +97,12 @@ function showConfig() {
     input.value = saved[key] ?? ''
     input.addEventListener('change', () => {
       const value = input.value.trim()
+      // A custom API address needs its own host permission, asked while the user is here.
+      if (value && (key === 'anthropicUrl' || key === 'wireGateway')) {
+        try {
+          chrome.permissions.request({ origins: [`${new URL(value).origin}/*`] }).catch(() => {})
+        } catch (err) { /* not a URL; the request will fail with a clear error */ }
+      }
       if (value) saved[key] = type === 'number' ? Number(value) : value
       else delete saved[key]
       chrome.storage.local.set({ aiConfig: saved })

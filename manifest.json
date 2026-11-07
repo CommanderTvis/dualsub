@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Dualsub",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "A second subtitle line in your native language, plus grammar analysis, on Prime Video, ARD Mediathek, ZDF, YouTube and Netflix.",
   "permissions": [
     "storage",
@@ -9,7 +9,14 @@
   ],
   "host_permissions": [
     "https://translate.googleapis.com/*",
-    "https://api.ardmediathek.de/*"
+    "https://api.ardmediathek.de/*",
+    "https://api.anthropic.com/*",
+    "http://127.0.0.1/*",
+    "http://localhost/*"
+  ],
+  "optional_host_permissions": [
+    "https://*/*",
+    "http://*/*"
   ],
   "background": {
     "service_worker": "background.js"

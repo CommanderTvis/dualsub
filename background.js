@@ -1,4 +1,4 @@
-importScripts('langs.js')
+importScripts('langs.js', 'ai.js')
 
 // Content script reads the translated track straight from session storage,
 // so the page context needs access to it.
@@ -132,7 +132,8 @@ function note(text) {
   try {
     const port = chrome.runtime.connectNative(HOST)
     port.onMessage.addListener(() => port.disconnect())
-    port.onDisconnect.addListener(() => {})
+    // Read lastError so a missing host (HTTP providers need none) stays quiet.
+    port.onDisconnect.addListener(() => void chrome.runtime.lastError)
     port.postMessage({ diag: text })
   } catch (err) { /* no host installed */ }
 }
@@ -233,8 +234,8 @@ function askClaude(cues, mode, model) {
   return turn
 }
 
-// The native host rejects more than 900 lines in one request.
-const MAX_AI_CUES = 900
+// Neither the host nor the HTTP providers take more than 900 lines in one request.
+const MAX_AI_CUES = AI_MAX_CUES
 
 async function splitCues(cues, mode, model) {
   const mid = Math.ceil(cues.length / 2)
@@ -261,7 +262,21 @@ async function askSplit(cues, mode, model) {
   }
 }
 
+// A pending fetch alone does not keep an MV3 worker alive for the minute or two a whole
+// track takes; extension API calls do.
+async function keepAlive(promise) {
+  const timer = setInterval(() => chrome.runtime.getPlatformInfo(), 20000)
+  try {
+    return await promise
+  } finally {
+    clearInterval(timer)
+  }
+}
+
 function callAI(cues, mode, model) {
+  const request = { cues, mode, model, aiSource, config: aiConfig, source, sourceName: learnt().name, target, targetName: language().name }
+  // Anthropic API and Wire are plain HTTP: no native host involved.
+  if (AI_HTTP_SOURCES.includes(aiSource)) return keepAlive(aiAskHttp(aiSource, request, aiConfig))
   return new Promise((resolve, reject) => {
     let port
     try {
@@ -281,7 +296,7 @@ function callAI(cues, mode, model) {
     port.onDisconnect.addListener(() => {
       reject(new Error(chrome.runtime.lastError?.message || 'bridge: port closed'))
     })
-    port.postMessage({ cues, mode, model, aiSource, config: aiConfig, source, sourceName: learnt().name, target, targetName: language().name })
+    port.postMessage(request)
   })
 }
 

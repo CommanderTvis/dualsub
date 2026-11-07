@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
-import { runInNewContext } from 'node:vm'
+import { runInContext, runInNewContext } from 'node:vm'
 
 test('tracks above the host limit keep every translation at its original line number', async () => {
   const calls = []
@@ -36,10 +36,9 @@ test('tracks above the host limit keep every translation at its original line nu
     chrome,
     console,
     queueMicrotask,
-    importScripts() {
-      context.DUALSUB_DEFAULT_LANG = 'ru'
-      context.DUALSUB_DEFAULT_SOURCE = 'de'
-      context.DUALSUB_LANGS = [{ code: 'ru', name: 'Russian' }]
+    // The real shared scripts, loaded into the worker's global scope as importScripts would.
+    importScripts(...files) {
+      files.forEach(file => runInContext(readFileSync(new URL(`./${file}`, import.meta.url), 'utf8'), context))
     }
   }
   const translate = runInNewContext(`${source}\naskSplit`, context)
