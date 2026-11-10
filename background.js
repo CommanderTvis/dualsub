@@ -10,6 +10,8 @@ let target = DUALSUB_DEFAULT_LANG
 // The language being learnt: the subtitle track is expected in it.
 let source = DUALSUB_DEFAULT_SOURCE
 let withSyntax = true
+// Off: tracks are remembered but not translated, so switching on picks up the current one.
+let enabled = true
 let aiSource = 'codex'
 // Backend settings from the popup (paths, models, API key); the host applies its defaults.
 let aiConfig = {}
@@ -21,7 +23,12 @@ let foreign = null
 const language = () => DUALSUB_LANGS.find(item => item.code === target) || DUALSUB_LANGS[0]
 const learnt = () => DUALSUB_LANGS.find(item => item.code === source) || { code: source, name: source }
 
-chrome.storage.sync.get(['target', 'source', 'syntax', 'aiSource']).then(data => {
+// The toolbar icon says when the extension is switched off.
+const showEnabled = () => chrome.action?.setBadgeText({ text: enabled ? '' : 'off' })
+
+chrome.storage.sync.get(['target', 'source', 'syntax', 'aiSource', 'enabled']).then(data => {
+  enabled = data.enabled !== false
+  showEnabled()
   if (data.target) target = data.target
   if (data.source) source = data.source
   if (typeof data.syntax === 'boolean') withSyntax = data.syntax
@@ -37,6 +44,12 @@ chrome.storage.onChanged.addListener((changes, area) => {
     if (lastTrack) ingestTrack(lastTrack)
   }
   if (area !== 'sync') return
+  if (changes.enabled) {
+    enabled = changes.enabled.newValue !== false
+    showEnabled()
+    console.log('[dualsub]', enabled ? 'switched on' : 'switched off')
+    if (enabled && lastTrack) ingestTrack(lastTrack)
+  }
   if (changes.syntax) {
     withSyntax = changes.syntax.newValue
     if (withSyntax && lastTrack && !foreign) parseSyntax(parseCues(lastTrack))
@@ -332,6 +345,7 @@ async function loadArdTrack(id) {
 
 async function ingestTrack(track, asr) {
   lastTrack = track
+  if (!enabled) return
   const cues = parseCues(track)
   // Whole-track sample: a single cue is too short to detect reliably, a few hundred are not.
   const { languages } = await chrome.i18n.detectLanguage(cues.slice(0, 200).join(' '))

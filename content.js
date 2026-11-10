@@ -48,6 +48,9 @@ function applyFixes(nodes) {
   })
 }
 let withSyntax = true
+// The popup's master switch: off means this tab draws nothing and asks for nothing.
+let enabled = true
+let hard = false
 
 // Hard mode: no caption at all, German included, until the hotkey is held. The player's own
 // text is only made transparent, never removed, so layout and the cue lookup keep working.
@@ -57,9 +60,22 @@ document.documentElement.appendChild(hardStyle)
 
 const setHard = on => document.documentElement.classList.toggle('dualsub-hard', !!on)
 
-chrome.storage.sync.get(['syntax', 'hard']).then(data => {
+function setEnabled(on) {
+  enabled = on
+  setHard(enabled && hard)
+  if (enabled) {
+    if (lastStatus) showStatus(lastStatus)
+    schedule()
+  } else {
+    clearLine()
+    document.querySelector('.dualsub-status')?.remove()
+  }
+}
+
+chrome.storage.sync.get(['syntax', 'hard', 'enabled']).then(data => {
   withSyntax = data.syntax !== false
-  setHard(data.hard)
+  hard = !!data.hard
+  setEnabled(data.enabled !== false)
 }, () => {})
 
 // The page-world script picks the YouTube track by language, and only this side can read
@@ -70,7 +86,11 @@ chrome.storage.sync.get('source').then(data => tellLearnt(data.source), () => te
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== 'sync') return
   if (changes.syntax) withSyntax = changes.syntax.newValue
-  if (changes.hard) setHard(changes.hard.newValue)
+  if (changes.hard) {
+    hard = !!changes.hard.newValue
+    setHard(enabled && hard)
+  }
+  if (changes.enabled) setEnabled(changes.enabled.newValue !== false)
   if (changes.source) tellLearnt(changes.source.newValue)
 })
 
@@ -222,6 +242,7 @@ let lastStatus = null
 
 function showStatus(status) {
   lastStatus = status
+  if (!enabled) return
   const host = statusHost()
   const existing = document.querySelector('.dualsub-status')
   const text = {
@@ -376,6 +397,7 @@ function fromCache(nodes, joined) {
 }
 
 function tick() {
+  if (!enabled) return
   const nodes = captionNodes()
   liftCaptions(nodes)
   applyFixes(nodes)

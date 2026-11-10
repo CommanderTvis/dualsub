@@ -27,7 +27,7 @@ function host(dir, input, env = {}, args = ['chrome-extension://test/']) {
   return result
 }
 
-const FAKE_CODEX = `#!/usr/bin/env node
+const FAKE_CODEX = `#!/usr/bin/env bun
 const fs = require('node:fs')
 const args = process.argv.slice(2)
 const value = flag => args[args.indexOf(flag) + 1]
@@ -45,7 +45,7 @@ fs.writeFileSync(value('--output-last-message'), process.env.TEST_BEHAVIOR === '
   ? 'not json' : JSON.stringify({ lines }))
 `
 
-const FAKE_CLAUDE = `#!/usr/bin/env node
+const FAKE_CLAUDE = `#!/usr/bin/env bun
 const fs = require('node:fs')
 const args = process.argv.slice(2)
 fs.writeFileSync(process.env.TEST_RECORD, JSON.stringify({ args, prompt: fs.readFileSync(0, 'utf8'), thinking: process.env.MAX_THINKING_TOKENS }))

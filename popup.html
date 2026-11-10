@@ -1,15 +1,24 @@
 <!doctype html>
 <meta charset="utf-8">
 <style>
+  :root { color-scheme: dark light; --bg: #1d1b2e; --fg: #eee; --label: #cfcce4; --muted: #9a97b5;
+          --field: #2c2a42; --border: #444; --accent: #9cfde4; }
+  @media (prefers-color-scheme: light) {
+    :root { --bg: #ffffff; --fg: #1d1b2e; --label: #3a3752; --muted: #6b6884;
+            --field: #f3f2f8; --border: #c9c6d9; --accent: #0a7f6a; }
+  }
   body { width: 260px; margin: 0; padding: 14px; font: 13px -apple-system, sans-serif;
-         background: #1d1b2e; color: #eee; }
-  h1 { margin: 0 0 12px; font-size: 13px; font-weight: 600; }
-  select { width: 100%; padding: 6px; background: #2c2a42; color: #eee;
-           border: 1px solid #444; border-radius: 4px; }
-  label { display: block; margin-top: 12px; color: #cfcce4; }
-  p { margin: 12px 0 0; color: #9a97b5; line-height: 1.4; }
+         background: var(--bg); color: var(--fg); }
+  h1 { margin: 0; font-size: 13px; font-weight: 600; }
+  header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  header label { margin: 0; display: flex; gap: 6px; align-items: center; }
+  body.off #settings { opacity: .45; }
+  select { width: 100%; padding: 6px; background: var(--field); color: var(--fg);
+           border: 1px solid var(--border); border-radius: 4px; }
+  label { display: block; margin-top: 12px; color: var(--label); }
+  p { margin: 12px 0 0; color: var(--muted); line-height: 1.4; }
   .row { display: flex; gap: 8px; align-items: center; margin-top: 14px; }
-  .legend { list-style: none; margin: 10px 0 0; padding: 0; color: #cfcce4; }
+  .legend { list-style: none; margin: 10px 0 0; padding: 0; color: var(--label); }
   .legend li { margin: 5px 0; text-underline-offset: .18em; }
   .dualsub-s { text-decoration: underline solid; text-decoration-thickness: 2px; }
   .dualsub-v { text-decoration: underline double; }
@@ -17,12 +26,16 @@
   .dualsub-o { text-decoration: underline dotted; text-decoration-thickness: 2px; }
   .dualsub-a { text-decoration: underline dashed; }
   input[type=text], input[type=password], input[type=number] { width: 100%; box-sizing: border-box; margin-top: 4px; padding: 5px 6px;
-           background: #2c2a42; color: #eee; border: 1px solid #444; border-radius: 4px; }
+           background: var(--field); color: var(--fg); border: 1px solid var(--border); border-radius: 4px; }
   .field select { margin-top: 4px; }
   .field { display: block; margin-top: 8px; font-size: 12px; }
-  code { color: #9cfde4; }
+  code { color: var(--accent); }
 </style>
-<h1>Dualsub</h1>
+<header>
+  <h1>Dualsub</h1>
+  <label><input type="checkbox" id="enabled"> Enabled</label>
+</header>
+<div id="settings">
 <label for="source">I am learning</label>
 <select id="source"></select>
 <label for="lang">Second line in</label>
@@ -48,6 +61,7 @@
   <li><span class="dualsub-o">object</span></li>
   <li><span class="dualsub-a">adverbial</span></li>
 </ul>
+</div>
 <p id="status"></p>
 <script src="langs.js"></script>
 <script src="popup.js"></script>

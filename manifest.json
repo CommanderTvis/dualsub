@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Dualsub",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "description": "A second subtitle line in your native language, plus grammar analysis, on Prime Video, ARD Mediathek, ZDF, YouTube and Netflix.",
   "permissions": [
     "storage",

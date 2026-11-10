@@ -8,17 +8,25 @@ DUALSUB_LANGS.forEach(lang => {
   source.add(new Option(text, lang.code))
 })
 
+const enabled = document.getElementById('enabled')
 const syntax = document.getElementById('syntax')
 const aiSource = document.getElementById('ai-source')
 const hard = document.getElementById('hard')
 
-chrome.storage.sync.get(['target', 'source', 'syntax', 'aiSource', 'hard']).then(data => {
+chrome.storage.sync.get(['target', 'source', 'syntax', 'aiSource', 'hard', 'enabled']).then(data => {
+  enabled.checked = data.enabled !== false
+  document.body.classList.toggle('off', !enabled.checked)
   source.value = data.source || DUALSUB_DEFAULT_SOURCE
   hard.checked = data.hard === true
   select.value = data.target || DUALSUB_DEFAULT_LANG
   syntax.checked = data.syntax !== false
   aiSource.value = data.aiSource || 'codex'
   showConfig()
+})
+
+enabled.addEventListener('change', () => {
+  document.body.classList.toggle('off', !enabled.checked)
+  chrome.storage.sync.set({ enabled: enabled.checked })
 })
 
 hard.addEventListener('change', () => {

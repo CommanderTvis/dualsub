@@ -20,13 +20,10 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 24
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.4.4
-      - run: node --test
+      - run: bun test
       # Bun cross-compiles every target from here, and signs the macOS ones ad hoc.
       - name: Compile the native host
         run: |
@@ -34,7 +31,7 @@ jobs:
             bun build --compile --minify --target="bun-$target" host/host.js --outfile "out/$target/host/dualsub-host"
           done
       - name: Test the compiled host, install included
-        run: DUALSUB_HOST="$PWD/out/linux-x64/host/dualsub-host" node --test host/
+        run: DUALSUB_HOST="$PWD/out/linux-x64/host/dualsub-host" bun test host/
       # Each zip is the unpacked extension plus that platform's host binary in host/.
       - name: Package
         run: |
